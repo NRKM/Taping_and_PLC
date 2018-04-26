@@ -26,11 +26,15 @@ int L_PLC_ReturnToOrigin	;
 //int L_PLC_Spare1			;
 int L_PLC_Spare2			;
 
+bool Start_COrigin			;
+
 void Init_Interface(void);
 void initI(void);
 void IOCheck(void);
 void Serial_Check(void);
 void SignalsRead(void);
+void Start_ReturnToOrigin(void);
+//void EmergencyStop(void);
 
 void Init_Interface(void) {
 	initI();
@@ -71,6 +75,8 @@ void initI() {
 	//pinMode(O_PLC_Spare1        , OUTPUT)			;
 	pinMode(O_PLC_Spare2          , OUTPUT)			;
 
+	//attachInterrupt(I_PLC_Spare2, EmergencyStop, FALLING);
+
 }
 
 //----------------------Communication_with_I/O----------------------
@@ -84,19 +90,19 @@ void IOCheck(){
   }
   if(L_PLC_TapingStart2		== HIGH){
     SerialUSB.println("#Y1_#D11_Received_PLC_TapingStart2");
+	Okuri_Start(Delay_Time_Okuri[3]);
   }
   if(L_PLC_PreOkuri			== HIGH){
     SerialUSB.println("#Y2_#D12_Received_PLC_PreOkuri");
-	Okuri_Start(Delay_Time_Okuri[0]);
     digitalWrite(O_PLC_PreOkuriFinish, HIGH);
-	delay(100);
+	Okuri_Start(Delay_Time_Okuri[0]);
     digitalWrite(O_PLC_PreOkuriFinish, LOW);
   }
   if(L_PLC_BarOpen			== HIGH){
     SerialUSB.println("#Y3_#D13_Received_PLC_BarOpen");
-	LeverOpen();
 	digitalWrite(O_PLC_BarOpenFinish, HIGH);
-    delay(500);
+	LeverOpen();
+    delay(10);
 	digitalWrite(O_PLC_BarOpenFinish, LOW);
   }
   if(L_PLC_MotorReset		== HIGH){
@@ -104,15 +110,16 @@ void IOCheck(){
   }
   if(L_PLC_ReturnToOrigin   == HIGH){
     SerialUSB.println("#Y6_#D14_Received_PLC_ReturnToOrigin");
-    digitalWrite(O_PLC_RetToOrigFinish, HIGH);
-	delay(200);
-    digitalWrite(O_PLC_RetToOrigFinish, LOW);
+	Start_ReturnToOrigin();
   }
   //if(L_PLC_Spare1   == HIGH){
   //  SerialUSB.println("#Y6_#D14_Received_L_PLC_Spare1");
   //}
   if(L_PLC_Spare2			== HIGH){
     SerialUSB.println("#Y7_#D17_Received_PLC_Spare2");
+    Running_Status = WAIT_INPUT;
+    analogWrite(M_pinPWM, 0);
+	Break();
   }
 }
 
@@ -181,6 +188,74 @@ void Serial_Check(){
                 enc_count = 0;
                 Running_Status = MOTOR_START0;
                 break;
+				
+              case 'k':
+                enc_count = 0;
+				Reverse();
+				delay(1000);
+				analogWrite(M_pinPWM, 5000);
+                Break();
+				delay(1000);
+				Reverse();
+				delay(1000);
+				analogWrite(M_pinPWM, 10000);
+                Break();
+				delay(2000);
+				Reverse();
+				delay(1000);
+				analogWrite(M_pinPWM, 20000);
+                Break();
+				delay(2000);
+				Reverse();
+				delay(1000);
+				analogWrite(M_pinPWM, 30000);
+                Break();
+				delay(2000);
+				Reverse();
+				delay(1000);
+				analogWrite(M_pinPWM, 40000);
+                Break();
+				delay(2000);
+				Reverse();
+				delay(1000);
+				analogWrite(M_pinPWM, 50000);
+                Break();
+				delay(2000);
+				Reverse();
+				delay(1000);
+				analogWrite(M_pinPWM, 60000);
+                Break();
+				delay(2000);
+
+              case 'l':
+                enc_count = 0;
+				analogWrite(M_pinPWM, 10000);
+				Reverse();
+				delay(1000);
+                Break();
+				analogWrite(M_pinPWM, 20000);
+				Reverse();
+				delay(1000);
+                Break();
+				delay(1000);
+				analogWrite(M_pinPWM, 30000);
+				Reverse();
+				delay(1000);
+                Break();
+
+			case 'm':
+                enc_count = 0;
+				Start_ReturnToOrigin();
+
+			case 'n':
+				LeverOpen();
+
+			case 'o':
+				LeverClose();
+
+
+                //Running_Status = MOTOR_START0;
+                break;
 
               default:
                 break;
@@ -200,3 +275,20 @@ void SignalsRead(){
 	L_PLC_Spare2	     = digitalRead(I_PLC_Spare2)		;//#Y7
 
 }
+
+void Start_ReturnToOrigin(void){
+	//enc_count         = 0;
+    pwmWrite(M_pinPWM, 20000);
+	Reverse();
+	Start_COrigin = true;
+}
+
+//void EmergencyStop(void){
+
+    //SerialUSB.println("#Y7_#D17_Received_PLC_Spare2");
+    //Running_Status = WAIT_INPUT;
+    //analogWrite(M_pinPWM, 0);
+	//Break();
+
+
+//}

@@ -50,11 +50,14 @@ extern int L_PLC_MotorReset		;
 //extern int L_PLC_Spare1		;
 extern int L_PLC_Spare2			;
 
+extern bool Start_COrigin		;
+
 extern void Init_Interface(void);
 extern void initI(void);
 extern void IOCheck(void);
 extern void Serial_Check(void);
 extern void SignalsRead(void);
+//extern void EmergencyStop(void);
 
 #ifdef	__cplusplus
 }

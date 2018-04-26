@@ -2,10 +2,10 @@
 int Running_Status;
 
 volatile int enc_count        = 0;
-const int Target_Count[3]     = {4800,230,4800}; //{j,1,2}
+const int Target_Count[3]     = {4800,300,4800}; //{j,1,2}
 int phase[3]                  = {0,1,2};         //{j,1,2}
-const int Delay_Time_Okuri[3] = {700,310,300};   //{f,1,2}
-const int Delay_Time_Cutting  = 300;
+const int Delay_Time_Okuri[4] = {1350,0,570,300};   //{f,1,2}
+const int Delay_Time_Cutting  = 500;
   
 int Debug_On                  = 1;
 int Debug_Time                = 500;
@@ -27,7 +27,7 @@ void loop() {
     //SerialUSB.println(enc_count);
     switch(Running_Status){
     case START_TAPING:
-                  Running_Status = OKURI_START1;
+                  Running_Status = MOTOR_START1;
       break;
     case OKURI_START1:
                   SerialUSB.println("OKURI_START1");
@@ -46,6 +46,7 @@ void loop() {
       break;
     case LEVER_CLOSE:
                   SerialUSB.println("LEVER_CLOSE");
+                  //delay(200);
                   LeverClose();
                   Running_Status = CUTTING_START;
                   delay(200);
@@ -54,7 +55,6 @@ void loop() {
                   SerialUSB.println("CUTTING");
                   Cutting(Delay_Time_Cutting);
                   Running_Status = MOTOR_START2;
-                  delay(200);
       break;
     case MOTOR_START2:
                   SerialUSB.println("MOTOR_START2");
@@ -68,6 +68,7 @@ void loop() {
       break;
     case OKURI_START2:
                   SerialUSB.println("OKURI_START2");
+                  //delay(200);
                   Okuri_Start(Delay_Time_Okuri[2]);
                   Running_Status = LEVER_OPEN;
                   SerialUSB.println(enc_count);

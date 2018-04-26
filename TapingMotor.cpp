@@ -7,11 +7,12 @@ int M_pinFW             = 3;
 int M_pinBR             = 24;
 int M_pinRE             = 25;
 
-double P                = 10;
+double P                = 30;
 double I                = 0;
-double D                = 0;
-double PWM_MAX          = 65535;
-double PWM_MIN          = 25000;
+double D                = 30;
+//double PWM_MAX          = 65535;
+double PWM_MAX          = 60000;
+double PWM_MIN          = 12000;
 int PID_On              = 0;
 
 void Init_TapingMotor(void);
@@ -72,6 +73,7 @@ void enc_changedPinB(){
     
 void Forward(){
     
+	SerialUSB.println("Forward");
     digitalWrite(M_pinFW, HIGH);
     digitalWrite(M_pinBR, LOW);
     digitalWrite(M_pinRE, LOW);
@@ -80,6 +82,7 @@ void Forward(){
   
 void Break(){
       
+	SerialUSB.println("Break");
     digitalWrite(M_pinFW, LOW);
     digitalWrite(M_pinBR, HIGH);
     digitalWrite(M_pinRE, LOW);
@@ -88,6 +91,7 @@ void Break(){
   
 void Reverse(){
   
+	SerialUSB.println("Reverse");
     digitalWrite(M_pinFW, LOW);
     digitalWrite(M_pinBR, LOW);
     digitalWrite(M_pinRE, HIGH);
@@ -96,31 +100,44 @@ void Reverse(){
 
 void PID_Start(){
     //P = (PWM_MAX - PWM_MIN) / Target_Count;
-    P = 5;
     PID_On = 1;
     //
-    if(Debug_On ==1){
-      SerialUSB.println("P_Value");
-      SerialUSB.println(P);
-    }
-    Forward();
+    Reverse();
 }
   
   
 void PID_Control(int Target_Count, int phase){
   static   int i              = 0;
-  volatile int P_Control      = 0;
-  volatile int I_Control      = 0;
-  volatile int D_Control      = 0;
+  static volatile int P_Control      = 0;
+  static volatile int I_Control      = 0;
+  static volatile int D_Control      = 0;
   float dt, preTime;
   
-  volatile int p_dev          = 0;
-  volatile int i_sum          = 0;
-  volatile int d_val          = 0;
-  volatile int pre_p_dev      = 0;
+  static volatile int p_dev          = 0;
+  static volatile int i_sum          = 0;
+  static volatile int d_val          = 0;
+  static volatile int pre_p_dev      = 0;
     
-  int Output                  = 0;
-  
+  static int Output                  = 0;
+
+  if(phase == 1){
+	  P = 40;
+	  //PWM_MIN = 30000;
+	  PWM_MIN = 16000;
+	  SerialUSB.println("Target_Count");
+	  SerialUSB.println(Target_Count);
+  }
+  else if(phase == 2 || phase == 0){
+	  P = 7;
+	  //PWM_MIN = 30500;
+  	  PWM_MIN = 16000;
+	  SerialUSB.println("Target_Count");
+	  SerialUSB.println(Target_Count);
+  }
+  if(Debug_On ==1){
+    SerialUSB.println("P_Value");
+    SerialUSB.println(P);
+  }
   i++;
    //
    if(i == MicroSec_To_MilliSec * Debug_Time && Debug_On ==1){
@@ -137,7 +154,8 @@ void PID_Control(int Target_Count, int phase){
    }
    dt = (micros() - preTime) / (MilliSec_To_Sec * MicroSec_To_MilliSec);
    preTime = micros();
-   if(PID_On ==1 && enc_count < 0){
+   if(enc_count < 0){
+      //Break();
       p_dev              = Target_Count - (-1) * enc_count;
       i_sum             += p_dev * dt;
       d_val              = (p_dev - pre_p_dev) / dt;
@@ -147,24 +165,27 @@ void PID_Control(int Target_Count, int phase){
         D_Control   = D            * d_val;
         Output      = P_Control    + I_Control - D_Control;
         Reverse();
-      }else if(p_dev <= 0){
+      }else if(p_dev < 0){
+		      //Break();
               P_Control   = P            * (-1) * p_dev  + PWM_MIN;
               I_Control   = I            * (-1) * i_sum;
               D_Control   = D            * (-1) * d_val;
               Output      = P_Control    + I_Control - D_Control;
               Forward();
       }
-   }else if(PID_On ==1 && enc_count > 0){
+   }else if(enc_count >= 0){
       p_dev      = Target_Count - enc_count;
       i_sum             += p_dev * dt;
       d_val              = (p_dev - pre_p_dev) / dt;
         if(p_dev >= 0){
+	      //Break();
           P_Control   = P            * p_dev + PWM_MIN;
           I_Control   = I            * i_sum;
           D_Control   = D            * d_val;
           Output      = P_Control    + I_Control - D_Control;
           Reverse();
-        }else if(p_dev <= 0){
+        }else if(p_dev < 0){
+		        //Break();
                 P_Control   = P            * (-1) * p_dev  + PWM_MIN;
                 I_Control   = I            * (-1) * i_sum;
                 D_Control   = D            * (-1) * d_val;
@@ -173,6 +194,8 @@ void PID_Control(int Target_Count, int phase){
         }
    }
    pre_p_dev = p_dev;
+   SerialUSB.println("output");
+   SerialUSB.println(Output);
    PWM_OutPutValue_Check(Output);
    COrigin_Check(p_dev,phase,Output);
      
@@ -191,26 +214,36 @@ void PWM_OutPutValue_Check(int Output){
 }
   
 void COrigin_Check(int p_deviation,int phase,int output){
-  #define Origin_Min -20
-  #define Origin_Max 20
-  #define Origin_Check_Time 75
+  #define Origin_Min -40
+  #define Origin_Max 40
+  #define Origin_Check_Time 20
   static int i=0;
+  static int j=0;
     
   if(PID_On == 1 && Origin_Min <= p_deviation && p_deviation <= Origin_Max){
     i++;
+	output = output - i * 250;
+
     if(i >= Origin_Check_Time){
-      i=0;
-      Break();
-      PID_On = 0;
+	  //while(j<100){
+		//analogWrite(M_pinPWM, output);
+		//j++;
+	  //}
+	  j=0;
       if(phase ==1){
         Running_Status = LEVER_CLOSE;
-        output = 0;
       }else if(phase == 2){
         Running_Status = OKURI_START2;
-        output = 0;
       }else {
-        Running_Status = WAIT_INPUT;          
+        Running_Status = WAIT_INPUT;
       }
+	  while(j<10){
+	      analogWrite(M_pinPWM, output);
+		  j++;
+	  }
+	  Break();
+	  j=0;
+	  i=0;
     }
   }
 }

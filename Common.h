@@ -32,7 +32,7 @@ typedef	signed int		S16;
 
 extern int Running_Status;
 extern const int Target_Count[3];
-extern const int Delay_Time_Okuri[3];
+extern const int Delay_Time_Okuri[4];
 extern const int Delay_Time_Cutting;
 extern volatile int enc_count;
 extern int Debug_On;

@@ -13,6 +13,7 @@ void Cutting(int Delay_Time_Cutting);
 void Okuri_Start(int DelayTime);
 void LeverOpen(void);
 void LeverClose(void);
+void Record_Enc_Count(void);
 
 
 void Init_Accessories(void) {
@@ -35,6 +36,8 @@ void initA() {
 	digitalWrite(T_Cut1			, HIGH);
 	pinMode(T_BarOpen			, OUTPUT);
 	pinMode(S_COriginSignal	    , INPUT_PULLDOWN);
+
+	attachInterrupt(S_COriginSignal, Record_Enc_Count, RISING);
 
 }
 
@@ -72,3 +75,17 @@ void LeverClose(void){
     delay(100);
 }
 
+void Record_Enc_Count(void){
+    SerialUSB.println("S_COriginSignal is detected");
+
+	if(Start_COrigin == true){
+
+	    Break();
+
+ 	    digitalWrite(O_PLC_RetToOrigFinish, HIGH);
+		delay(200);
+		digitalWrite(O_PLC_RetToOrigFinish, LOW);
+		Start_COrigin = false;
+	}
+    SerialUSB.println(enc_count);
+}
